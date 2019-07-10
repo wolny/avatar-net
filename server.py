@@ -83,8 +83,8 @@ class StyleTransfer(Resource):
             bytes = io.BytesIO()
             content.save(bytes)
             np_img = np.array(Image.open(bytes))
-            if len(img.shape) == 2:
-                img = np.dstack((img, img, img))
+            if len(np_img.shape) == 2:
+                np_img = np.dstack((np_img, np_img, np_img))
             if np_img.shape[2] == 4:
                 np_img = np_img[:, :, :3]
             imgs.append(np_img)
