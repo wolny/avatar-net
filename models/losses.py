@@ -42,7 +42,7 @@ def compute_sufficient_statistics(feature):
 def compute_content_features(features, content_loss_layers):
     """compute the content features from the end_point dict"""
     content_features = {}
-    instance_label = features.keys()[0]
+    instance_label = list(features.keys())[0]
     instance_label = instance_label[:-14]  # TODO: ugly code, need fix
     for layer in content_loss_layers:
         content_features[layer] = features[instance_label + '/' + layer]
@@ -52,7 +52,7 @@ def compute_content_features(features, content_loss_layers):
 def compute_style_features(features, style_loss_layers):
     """compute the style features from the end_point dict"""
     style_features = {}
-    instance_label = features.keys()[0]
+    instance_label = list(features.keys())[0]
     instance_label = instance_label[:-14]  # TODO: ugly code, need fix
     for layer in style_loss_layers:
         style_features[layer] = compute_gram_matrix(
@@ -62,7 +62,7 @@ def compute_style_features(features, style_loss_layers):
 
 def compute_approximate_style_features(features, style_loss_layers):
     style_features = {}
-    instance_label = features.keys()[0].split('/')[:-2]
+    instance_label = list(features.keys())[0].split('/')[:-2]
     for layer in style_loss_layers:
         style_features[layer] = compute_sufficient_statistics(
             features[instance_label + '/' + layer])

@@ -77,11 +77,6 @@ def main(_):
         raise ValueError('You must supply the checkpoints directory with '
                          '--checkpoint_dir')
 
-    if tf.gfile.IsDirectory(FLAGS.checkpoint_dir):
-        checkpoint_dir = tf.train.latest_checkpoint(FLAGS.checkpoint_dir)
-    else:
-        checkpoint_dir = FLAGS.checkpoint_dir
-
     if not tf.gfile.Exists(FLAGS.eval_dir):
         tf.gfile.MakeDirs(FLAGS.eval_dir)
 
@@ -118,7 +113,7 @@ def main(_):
 
         # starting inference of the images
         init_fn = slim.assign_from_checkpoint_fn(
-          checkpoint_dir, slim.get_model_variables(), ignore_missing_vars=True)
+          FLAGS.checkpoint_dir, slim.get_model_variables(), ignore_missing_vars=True)
         with tf.Session() as sess:
             # initialize the graph
             init_fn(sess)
