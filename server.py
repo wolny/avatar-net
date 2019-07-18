@@ -12,7 +12,7 @@ import io
 from pathlib import Path
 import base64
 from urllib.request import urlopen
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 from PIL import Image
 
@@ -117,6 +117,16 @@ def get_style_image(url):
         np_img = np_img[:, :, :3]
 
     return np_img
+
+
+@app.route("/", methods=["GET"])
+def root():
+    return app.send_static_file("index.html")
+
+
+@app.route("/images/<path:filename>")
+def images(filename):
+    return send_from_directory("images", filename)
 
 
 @app.route("/transfer", methods=["POST"])

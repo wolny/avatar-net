@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Kreshuk Lab: Style Transfer</title>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.min.css" integrity="sha256-l85OmPOjvil/SOvVt3HnSSjzF1TUMyT9eV0c2BzEGzU=" crossorigin="anonymous" />
+    <link href="https://fonts.googleapis.com/css?family=Istok+Web&display=swap" rel="stylesheet">
+
+    <style>
+      :root {
+        --content-width: 800px;
+        --style-image-size: 200px;
+        --border-radius: 50px;
+        --block-offset: 50px;
+        --form-item-background: linear-gradient(to right bottom, hsla(0, 0%, 100%, 1), hsla(0, 0%, 75%, 0.75));
+        --form-item-background-disabled: linear-gradient(to right bottom, hsla(0, 0%, 75%, 0.75), hsla(0, 0%, 50%, 0.5));
+        /* From Material Design. */
+        --shadow-normal: 0 8px 10px 1px rgba(0,0,0,0.14), 0 3px 14px 2px rgba(0,0,0,0.12), 0 5px 5px -3px rgba(0,0,0,0.20);
+        --shadow-elevated: 0 16px 24px 2px rgba(0,0,0,0.14), 0 6px 30px 5px rgba(0,0,0,0.12), 0 8px 10px -5px rgba(0,0,0,0.20);
+      }
+
+      body {
+        font-family: "Istok Web", sans-serif;
+        background: linear-gradient(hsl(0, 0%, 100%), hsl(0, 0%, 85%));
+      }
+
+      #overlay {
+        background: linear-gradient(hsla(0, 0%, 100%, 0.95), hsla(0, 0%, 85%, 0.95));
+        z-index: 10;
+        position: fixed;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        right: 0;
+        visibility: hidden;
+      }
+
+      .result-container {
+        width: var(--content-width);
+        margin: 0 auto;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        visibility: hidden;
+      }
+
+      .result-container img {
+        margin: var(--block-offset) auto;
+        max-width: 100%;
+        object-fit: cover;
+        box-shadow: var(--shadow-elevated);
+      }
+
+      #result-image {
+        border-radius: var(--border-radius);
+      }
+
+      #result-image-inverse {
+        width: calc(2 * var(--style-image-size));
+        height: calc(2 * var(--style-image-size));
+        border-radius: 50%;
+      }
+
+      main {
+        width: var(--content-width);
+        margin: 0 auto;
+      }
+
+      .title {
+        text-align: center;
+      }
+
+      .form-container {
+        margin-bottom: var(--block-offset);
+        padding: 0 1em;
+        display: flex;
+        margin: 1em 0;
+      }
+
+      .email {
+        border-radius: 1em;
+        font-size: 1.5em;
+        padding: 0.5em 1em;
+        border: none;
+        flex-grow: 1;
+        margin-right: 1em;
+        background: var(--form-item-background);
+        box-shadow: var(--shadow-normal);
+      }
+
+      .submit {
+        bottom: var(--block-offset);
+        margin: 0 auto;
+        font-size: 1.5em;
+        background: var(--form-item-background);
+        border-radius: 1em;
+        border: none;
+        padding: 0.5em 1em;
+        box-shadow: var(--shadow-normal);
+        transition: all 0.2s ease-in-out;
+      }
+
+      .submit:enabled:hover {
+        box-shadow: var(--shadow-elevated);
+      }
+
+      .submit:disabled {
+        background: var(--form-item-background-disabled);
+      }
+
+      .photo-container {
+        width: 100%;
+        position: sticky;
+        top: 0;
+      }
+
+      .webcam-stream {
+        width: 100%;
+        border-radius: var(--border-radius);
+        box-shadow: var(--shadow-normal);
+        transition: all 0.2s ease-in-out;
+      }
+
+      .webcam-stream:hover {
+        box-shadow: var(--shadow-elevated);
+      }
+
+      .style-image-selected {
+        position: absolute;
+        top: calc(0px - var(--block-offset));
+        left: calc(0px - var(--block-offset));
+        visibility: hidden;
+      }
+
+      .style-image-container {
+        margin: var(--block-offset) 0;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, var(--style-image-size));
+        gap: var(--block-offset);
+        place-items: center;
+        place-content: center;
+      }
+
+      .style-image {
+        width: var(--style-image-size);
+        height: var(--style-image-size);
+        object-fit: cover;
+        border-radius: 50%;
+        box-shadow: var(--shadow-normal);
+        transition: all 0.2s ease-in-out;
+      }
+
+      .style-image:hover {
+        box-shadow: var(--shadow-elevated);
+        transform: scale(1.05);
+      }
+    </style>
+  </head>
+  
+  <body>
+    <div id="overlay">
+      <div class="result-container">
+        <img id="result-image">
+        <img id="result-image-inverse">
+      </div>
+    </div>
+    <canvas class="webcam-snapshot" hidden></canvas>
+
+    <main>
+      <h1 class="title">Kreshuk Lab: Style Transfer</h1>
+      <div class="photo-container">
+        <video autoplay muted playsinline class="webcam-stream"></video>
+        <img class="style-image style-image-selected">
+        <div class="form-container">
+          <input class="email" type="email" required placeholder="Your email">
+          <button class="submit" disabled>Submit</button>
+        </div>
+      </div>
+      <div class="style-image-container"></div>
+    </main>
+
+    <script>
+      const backendUrl = "http://gpu7.cluster.embl.de:8888/transfer";
+      
+      const styleImageNames = [
+        "candy.jpg",
+        "brushstrokers.jpg",
+        "la_muse.jpg",
+        "plum_flower.jpg",
+        "picasso_selfport1907.jpg",
+        "seated-nude.jpg",
+        "shipwreck.jpg",
+        "starry_night.jpg",
+        "the_scream.jpg",
+        "AdeleBloch.jpg",
+        "van-gogh-self-portrait.jpg",
+        "adrianStyle.jpg",
+        "constantinStyle.jpg",
+        "cremiStyle.jpg",
+        "emilStyle2.jpg",
+        "ilastikStyle.jpg",
+        "valentynaStyle.jpg",
+      ];
+
+      const overlay = document.querySelector("#overlay");
+      const resultContainer = document.querySelector(".result-container");
+      const resultImage = document.querySelector("#result-image");
+      const resultImageInverse = document.querySelector("#result-image-inverse");
+      const video = document.querySelector(".webcam-stream");
+      const selectedStyleImage = document.querySelector(".style-image-selected");
+      const styleImageContainer = document.querySelector(".style-image-container");
+      const emailInput = document.querySelector(".email");
+      const submit = document.querySelector(".submit");
+      const canvas = document.querySelector(".webcam-snapshot");
+      const ctx = canvas.getContext("2d");
+
+      const onStateChanged = () => {
+        submit.disabled = !(selectedStyleImage.src && video.paused && emailInput.validity.valid);
+      };
+
+      navigator.mediaDevices.getUserMedia({
+        audio: false,
+        video: {
+          width: Number.MAX_SAFE_INTEGER,
+          height: Number.MAX_SAFE_INTEGER,
+          frameRate: Number.MAX_SAFE_INTEGER,
+          facingMode: "user",
+        },
+      }).then(stream => {
+        video.srcObject = stream;
+        const settings = stream.getVideoTracks()[0].getSettings();
+        canvas.width = settings.width;
+        canvas.height = settings.height;
+        video.addEventListener("click", () => {
+          if (video.paused) {
+            video.play();
+          } else {
+            video.pause();
+            ctx.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
+          }
+        });
+        video.addEventListener("click", onStateChanged);
+      });
+
+      styleImageNames.forEach(name => {
+        const img = document.createElement("img");
+        img.setAttribute("src", `/images/${name}`);
+        img.classList.add("style-image");
+        img.addEventListener("load", () => {
+          img.addEventListener("click", () => {
+            selectedStyleImage.setAttribute("src", img.src);
+            selectedStyleImage.style.visibility = "visible";
+          });
+          img.addEventListener("click", onStateChanged);
+        });
+        styleImageContainer.appendChild(img);
+      });
+
+      selectedStyleImage.addEventListener("click", () => {
+        selectedStyleImage.style.visibility = "hidden";
+        selectedStyleImage.removeAttribute("src");
+      });
+      selectedStyleImage.addEventListener("click", onStateChanged);
+
+      emailInput.addEventListener("input", onStateChanged);
+
+      function reset() {
+        if (resultImage.src && resultImageInverse.src) {
+          resultImage.src = undefined;
+          resultImageInverse.src = undefined;
+          selectedStyleImage.style.visibility = "hidden";
+          selectedStyleImage.src = undefined;
+          emailInput.value = "";
+          video.play();
+          resultContainer.style.visibility = "hidden";
+          overlay.style.visibility = "hidden";
+          overlay.removeEventListener("click", reset);
+          document.body.style.overflow = "visible";
+        }
+      }
+
+      submit.addEventListener("click", () => {
+        document.body.style.overflow = "hidden";
+        overlay.style.visibility = "visible";
+        fetch(backendUrl, {
+          method: "POST",
+          mode: "cors",
+          headers: {"Content-Type": "application/json"},
+          body: JSON.stringify({
+            "contentImage": canvas.toDataURL("image/jpeg"),
+            "styleImage": selectedStyleImage.src,
+            "email": emailInput.value,
+          }),
+        }).then(response => response.json()).then(json => {
+          resultContainer.style.visibility = "visible";
+          resultImage.src = `data:image/jpeg;base64,${json["image"]}`;
+          resultImageInverse.src = `data:image/jpeg;base64,${json["inverseImage"]}`;
+
+          overlay.addEventListener("click", reset);
+
+        }).catch(error => {
+          alert("Request error");
+          console.log(error);
+        });
+      });
+    </script>
+  </body>
+</html>
