@@ -1,3 +1,5 @@
+#!/g/kreshuk/wolny/miniconda3/envs/pytorch041/bin/python
+
 import io
 import time
 
@@ -10,7 +12,7 @@ import io
 from pathlib import Path
 import base64
 from urllib.request import urlopen
-from flask import Flask, request
+from flask import Flask, request, jsonify
 from flask_cors import CORS
 from PIL import Image
 
@@ -84,6 +86,7 @@ def save_and_b64encode(arr, suffix, email):
     root.mkdir(mode=0o755, parents=True, exist_ok=True)
 
     f = io.BytesIO()
+    arr = np.clip(arr, 0, 255).astype(np.uint8)
     Image.fromarray(arr).save(f, format="jpeg")
 
     uid = secrets.token_hex(nbytes=16)
@@ -124,22 +127,22 @@ def transfer_json():
     content_image = dataurl2ndarray(json["contentImage"])
     style_image = get_style_image(json["styleImage"])
 
-    stylized_image = sess.run(stylized_image,
+    image = sess.run(stylized_image,
                                      feed_dict={inp_content_image: content_image,
                                                 inp_style_image: style_image})
 
-    inverse_stylized_image = sess.run(stylized_image,
+    inverse_image = sess.run(stylized_image,
                                      feed_dict={inp_content_image: style_image,
                                                 inp_style_image: content_image})
 
-    image = save_and_b64encode(stylized_image, "image", email)
-    inverse_image = save_and_b64encode(inverse_stylized_image, "inverse", email)
+    image = save_and_b64encode(image, "image", email)
+    inverse_image = save_and_b64encode(inverse_image, "inverse", email)
 
-    return {
+    return jsonify({
         "image": image,
         "inverseImage": inverse_image,
-    }
+    })
 
 
 if __name__ == "__main__":
-    app.run()
+    app.run(host="0.0.0.0", port=8888)
