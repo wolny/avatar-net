@@ -4,11 +4,15 @@ import time
 import numpy as np
 import scipy
 import tensorflow as tf
-from PIL import Image
+from urllib.parse import urlparse
+import secrets
+import io
+from pathlib import Path
+import base64
+from urllib.request import urlopen
 from flask import Flask, request
 from flask_cors import CORS
-from flask_restful import Resource, Api
-from flask import send_file
+from PIL import Image
 
 from models import models_factory
 from models import preprocessing
@@ -65,48 +69,77 @@ with graph.as_default():
     sess = tf.Session(graph=graph)
     init_fn(sess)
 
+
+
 app = Flask(__name__)
-cors = CORS(app, resources={r"/*": {"origins": "*"}})
-api = Api(app)
+CORS(app)
 
 
-def imsave(filename, img):
-    img = np.clip(img, 0, 255).astype(np.uint8)
-    Image.fromarray(img).save(filename, quality=95)
+OUTPUT_DIR = Path("output")
+STYLE_IMG_DIR = Path("images")
 
 
-class StyleTransfer(Resource):
-    def get_np_images(self, request, keys):
-        imgs = []
-        for key in keys:
-            content = request.files[key]
-            bytes = io.BytesIO()
-            content.save(bytes)
-            np_img = np.array(Image.open(bytes))
-            if len(np_img.shape) == 2:
-                np_img = np.dstack((np_img, np_img, np_img))
-            if np_img.shape[2] == 4:
-                np_img = np_img[:, :, :3]
-            imgs.append(np_img)
-        return imgs
+def save_and_b64encode(arr, suffix, email):
+    root = OUTPUT_DIR / email
+    root.mkdir(mode=0o755, parents=True, exist_ok=True)
 
-    def post(self):
-        imgs = self.get_np_images(request, ['content', 'style'])
-        np_content_img = imgs[0]
-        np_style_img = imgs[1]
+    f = io.BytesIO()
+    Image.fromarray(arr).save(f, format="jpeg")
 
-        start_time = time.time()
-        np_stylized_image = sess.run(stylized_image,
-                                     feed_dict={inp_content_image: np_content_img,
-                                                inp_style_image: np_style_img})
-        duration = time.time() - start_time
-        print("---%s seconds ---" % duration)
+    uid = secrets.token_hex(nbytes=16)
+    buf = f.getbuffer()
+    (root / f"{uid}-{suffix}.jpg").write_bytes(buf)
 
-        imsave('tmp.jpg', np_stylized_image)
-        return send_file('tmp.jpg')
+    return base64.b64encode(buf).decode()
 
 
-api.add_resource(StyleTransfer, '/transfer')
+def dataurl2ndarray(dataurl):
+    resp = urlopen(dataurl)
+    return np.array(Image.open(resp.file))
 
-if __name__ == '__main__':
-    app.run(threaded=True, host='0.0.0.0', port=8888)
+
+def get_style_image(url):
+    url = urlparse(url)
+    path = url.path
+    parts = path.strip("/").split("/")
+    assert len(parts) == 2
+    assert parts[0] == "images"
+    name = parts[-1]
+    
+    np_img = np.array(Image.open(STYLE_IMG_DIR / name))
+
+    if len(np_img.shape) == 2:
+        np_img = np.dstack((np_img, np_img, np_img))
+    if np_img.shape[2] == 4:
+        np_img = np_img[:, :, :3]
+
+    return np_img
+
+
+@app.route("/transfer", methods=["POST"])
+def transfer_json():
+    json = request.get_json()
+    email = json["email"]
+
+    content_image = dataurl2ndarray(json["contentImage"])
+    style_image = get_style_image(json["styleImage"])
+
+    stylized_image = sess.run(stylized_image,
+                                     feed_dict={inp_content_image: content_image,
+                                                inp_style_image: style_image})
+
+    inverse_stylized_image = sess.run(stylized_image,
+                                     feed_dict={inp_content_image: style_image,
+                                                inp_style_image: content_image})
+
+    image = save_and_b64encode(stylized_image, "image", email)
+    inverse_image = save_and_b64encode(inverse_stylized_image, "inverse", email)
+
+    return {
+        "image": image,
+        "inverseImage": inverse_image,
+    }
+
+
+if __name__ == "__main__":
+    app.run()
