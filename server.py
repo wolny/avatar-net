@@ -121,12 +121,12 @@ def get_style_image(url):
 
 @app.route("/", methods=["GET"])
 def root():
-    return app.send_static_file("index.html")
+    return send_from_directory(".", "index.html")
 
 
 @app.route("/images/<path:filename>")
 def images(filename):
-    return send_from_directory("images", filename)
+    return send_from_directory(str(STYLE_IMG_DIR), filename)
 
 
 @app.route("/transfer", methods=["POST"])
