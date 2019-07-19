@@ -183,7 +183,7 @@
     </main>
 
     <script>
-      const backendUrl = "http://gpu7.cluster.embl.de:8888/transfer";
+      const backendUrl = new URL("/transfer", window.location.href).toString();
       
       const styleImageNames = [
         "candy.jpg",
