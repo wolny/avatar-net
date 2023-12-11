@@ -53,7 +53,7 @@ def has_dataset_meta_data_file(dataset_dir, filename=_META_DATA_FILENAME):
 def read_dataset_meta_data(dataset_dir, filename=_META_DATA_FILENAME):
     meta_filename = os.path.join(dataset_dir, filename)
     with open(meta_filename, 'rb') as f:
-        dataset_meta_data = yaml.load(f)
+        dataset_meta_data = yaml.safe_load(f)
         print('Finish loading the dataset meta data of [%s].' %
               dataset_meta_data.get('dataset_name'))
         return dataset_meta_data

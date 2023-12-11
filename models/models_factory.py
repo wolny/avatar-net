@@ -19,7 +19,7 @@ def get_model(filename):
         raise ValueError('The config file [%s] does not exist.' % filename)
 
     with open(filename, 'rb') as f:
-        options = yaml.load(f)
+        options = yaml.safe_load(f)
         model_name = options.get('model_name')
         print('Finish loading the model [%s] configuration' % model_name)
         if model_name not in models_map:
