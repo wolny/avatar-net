@@ -1,6 +1,6 @@
 import base64
 import io
-import secrets
+import uuid
 from pathlib import Path
 from urllib.parse import urlparse
 from urllib.request import urlopen
@@ -86,17 +86,14 @@ OUTPUT_DIR = Path("output")
 STYLE_IMG_DIR = Path("images")
 
 
-def save_and_b64encode(arr, suffix, email):
-    root = OUTPUT_DIR / email
-    root.mkdir(mode=0o755, parents=True, exist_ok=True)
-
+def save_and_b64encode(arr, suffix, filename):
+    filename = f'{filename}-{suffix}.jpg'
+    path = OUTPUT_DIR / filename
     f = io.BytesIO()
     arr = np.clip(arr, 0, 255).astype(np.uint8)
     Image.fromarray(arr).save(f, format="jpeg")
-
-    uid = secrets.token_hex(nbytes=16)
     buf = f.getbuffer()
-    (root / f"{uid}-{suffix}.jpg").write_bytes(buf)
+    path.write_bytes(buf)
 
     return base64.b64encode(buf).decode()
 
@@ -137,7 +134,6 @@ def images(filename):
 @app.route("/transfer", methods=["POST"])
 def transfer_json():
     json = request.get_json()
-    email = json["email"]
 
     content_image = dataurl2ndarray(json["contentImage"])
     style_image = get_style_image(json["styleImage"])
@@ -150,8 +146,9 @@ def transfer_json():
                                      feed_dict={inp_content_image: style_image,
                                                 inp_style_image: content_image})
 
-    image = save_and_b64encode(image, "image", email)
-    inverse_image = save_and_b64encode(inverse_image, "inverse", email)
+    filename = str(uuid.uuid4().hex)
+    image = save_and_b64encode(image, "image", filename)
+    inverse_image = save_and_b64encode(inverse_image, "inverse", filename)
 
     return jsonify({
         "image": image,
