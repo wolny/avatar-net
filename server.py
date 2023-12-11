@@ -38,6 +38,16 @@ if not FLAGS.checkpoint_dir:
 tf.logging.set_verbosity(tf.logging.INFO)
 graph = tf.get_default_graph()
 
+gpus = tf.config.experimental.list_physical_devices('GPU')
+if gpus:
+    try:
+        # Currently, memory growth needs to be the same across GPUs
+        for gpu in gpus:
+            tf.config.experimental.set_memory_growth(gpu, True)
+    except RuntimeError as e:
+        # Memory growth must be set before GPUs have been initialized
+        print(e)
+
 with graph.as_default():
     # define the model
     style_model, options = models_factory.get_model(FLAGS.model_config_path)
