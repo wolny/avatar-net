@@ -50,6 +50,7 @@
       .result-container img {
         margin-top: var(--block-offset);
         max-width: 100%;
+        object-fit: cover;
         box-shadow: var(--shadow-elevated);
       }
 
@@ -75,17 +76,6 @@
         padding: 0 1em;
         display: flex;
         margin: 1em 0;
-      }
-
-      .email {
-        border-radius: 1em;
-        font-size: 1.5em;
-        padding: 0.5em 1em;
-        border: none;
-        flex-grow: 1;
-        margin-right: 1em;
-        background: var(--form-item-background);
-        box-shadow: var(--shadow-normal);
       }
 
       .submit {
@@ -167,12 +157,11 @@
     <canvas class="webcam-snapshot" hidden></canvas>
 
     <main>
-      <h1 class="title">Kreshuk Lab: Style Transfer</h1>
+      <h1 class="title">Style Transfer App</h1>
       <div class="photo-container">
         <video autoplay muted playsinline class="webcam-stream"></video>
         <img class="style-image style-image-selected">
         <div class="form-container">
-          <input class="email" type="email" required placeholder="Your email">
           <button class="submit" disabled>Submit</button>
         </div>
       </div>
@@ -209,13 +198,12 @@
       const video = document.querySelector(".webcam-stream");
       const selectedStyleImage = document.querySelector(".style-image-selected");
       const styleImageContainer = document.querySelector(".style-image-container");
-      const emailInput = document.querySelector(".email");
       const submit = document.querySelector(".submit");
       const canvas = document.querySelector(".webcam-snapshot");
       const ctx = canvas.getContext("2d");
 
       const onStateChanged = () => {
-        submit.disabled = !(selectedStyleImage.src && video.paused && emailInput.validity.valid);
+        submit.disabled = !(selectedStyleImage.src && video.paused);
       };
 
       navigator.mediaDevices.getUserMedia({
@@ -262,15 +250,12 @@
       });
       selectedStyleImage.addEventListener("click", onStateChanged);
 
-      emailInput.addEventListener("input", onStateChanged);
-
       function reset() {
         if (resultImage.src && resultImageInverse.src) {
           resultImage.src = undefined;
           resultImageInverse.src = undefined;
           selectedStyleImage.style.visibility = "hidden";
           selectedStyleImage.src = undefined;
-          emailInput.value = "";
           video.play();
           resultContainer.style.visibility = "hidden";
           overlay.style.visibility = "hidden";
@@ -288,8 +273,7 @@
           headers: {"Content-Type": "application/json"},
           body: JSON.stringify({
             "contentImage": canvas.toDataURL("image/jpeg"),
-            "styleImage": selectedStyleImage.src,
-            "email": emailInput.value,
+            "styleImage": selectedStyleImage.src
           }),
         }).then(response => response.json()).then(json => {
           resultContainer.style.visibility = "visible";
