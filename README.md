@@ -34,4 +34,4 @@ openssl x509 -req -days 365 -in server.csr -signkey server.key -out server.crt
 - The server returns 2 images: 1) the webcam image styled with the style image and 2) the style image styled with the webcam image (see below)
 - All generated images can be found in the `output` directory
 
-<img src="data/img_capture.png" width="640"/> <img src="data/style_transfered.png" width="640"/> 
+<img src="data/img_capture.png" width="400"/> <img src="data/style_transfered.png" width="400"/> 
