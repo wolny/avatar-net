@@ -150,4 +150,5 @@ def transfer_json():
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=8888, ssl_context='adhoc')
+    context = ('server.crt', 'server.key')
+    app.run(host="0.0.0.0", port=8888, ssl_context=context)
