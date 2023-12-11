@@ -1,20 +1,15 @@
-#!/g/kreshuk/wolny/miniconda3/envs/pytorch041/bin/python
-
+import base64
 import io
-import time
+import secrets
+from pathlib import Path
+from urllib.parse import urlparse
+from urllib.request import urlopen
 
 import numpy as np
-import scipy
 import tensorflow as tf
-from urllib.parse import urlparse
-import secrets
-import io
-from pathlib import Path
-import base64
-from urllib.request import urlopen
+from PIL import Image
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
-from PIL import Image
 
 from models import models_factory
 from models import preprocessing
@@ -155,4 +150,4 @@ def transfer_json():
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=8888)
+    app.run(host="0.0.0.0", port=8888, ssl_context='adhoc')
