@@ -1,5 +1,6 @@
 import base64
 import io
+import os
 import uuid
 from pathlib import Path
 from urllib.parse import urlparse
@@ -76,12 +77,10 @@ with graph.as_default():
     sess = tf.Session(graph=graph)
     init_fn(sess)
 
-
-
 app = Flask(__name__)
 CORS(app)
 
-
+os.mkdir("output", exist_ok=True)
 OUTPUT_DIR = Path("output")
 STYLE_IMG_DIR = Path("images")
 
@@ -110,7 +109,7 @@ def get_style_image(url):
     assert len(parts) == 2
     assert parts[0] == "images"
     name = parts[-1]
-    
+
     np_img = np.array(Image.open(STYLE_IMG_DIR / name))
 
     if len(np_img.shape) == 2:
@@ -139,12 +138,12 @@ def transfer_json():
     style_image = get_style_image(json["styleImage"])
 
     image = sess.run(stylized_image,
-                                     feed_dict={inp_content_image: content_image,
-                                                inp_style_image: style_image})
+                     feed_dict={inp_content_image: content_image,
+                                inp_style_image: style_image})
 
     inverse_image = sess.run(stylized_image,
-                                     feed_dict={inp_content_image: style_image,
-                                                inp_style_image: content_image})
+                             feed_dict={inp_content_image: style_image,
+                                        inp_style_image: content_image})
 
     filename = str(uuid.uuid4().hex)
     image = save_and_b64encode(image, "image", filename)
