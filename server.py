@@ -80,7 +80,8 @@ with graph.as_default():
 app = Flask(__name__)
 CORS(app)
 
-os.mkdir("output", exist_ok=True)
+if not os.path.exists("output"):
+    os.mkdir("output")
 OUTPUT_DIR = Path("output")
 STYLE_IMG_DIR = Path("images")
 
