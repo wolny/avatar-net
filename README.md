@@ -13,6 +13,9 @@ The app was tested on Ubuntu 22.04 with Chrome browser (v120.0.6099.71) and a de
 - Download pre-trained Avatar-Net from [Google Drive](https://drive.google.com/open?id=1_7x93xwZMhCL-kLrz4B2iZ01Y8Q7SlTX) into `CHECKPOINT_DIR` directory
 - Clone the repository and `cd style-transfer-app`
 - Create conda environment with required packages: `conda env create -f environment.yaml`
+- Activate the environment: `conda activate style-transfer-app`
+- (Optional) Test if inference works:
+  `python evaluate_style_transfer.py --checkpoint_dir=CHECKPOINT_DIR/model.ckpt-120000 --model_config_path=configs/AvatarNet_config.yml --content_dataset_dir=./data/contents/images/ --style_dataset_dir=./images --eval_dir=./results --inter_weight=0.8`
 - Generate self-signed certificate for SSL, so that Chrome allows you to access the camera:
 ```bash
 openssl req -new -key server.key -out server.csr
