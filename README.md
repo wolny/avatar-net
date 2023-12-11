@@ -4,7 +4,7 @@ Simple web app which allows the user to take a photo with the webcam and apply s
 Avatar-Net is used for style transfer, see:
 [__Avatar-Net: Multi-scale Zero-shot Style Transfer by Feature Decoration__](https://arxiv.org/abs/1805.03857)
 
-The app is written in Python using Flask, Javascript, HTML and CSS.
+The app is written in Python using Flask, Javascript, HTML and CSS (kudos to Emil Melnikov for helping with the HTML/CSS part).
 
 ## Requirements
 The app was tested on Ubuntu 22.04 with Chrome browser (v120.0.6099.71) and a decent GPU (Nvidia GeForce RTX 2080 Ti).
