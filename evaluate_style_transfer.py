@@ -4,7 +4,7 @@ from __future__ import print_function
 
 import os
 import time
-import scipy.misc
+import imageio
 import numpy as np
 import tensorflow as tf
 
@@ -52,7 +52,7 @@ def get_image_filenames(dataset_dir):
 
 def image_reader(filename):
     """help fn that provides numpy image coding utilities"""
-    img = scipy.misc.imread(filename).astype(np.float)
+    img = imageio.v2.imread(filename)
     if len(img.shape) == 2:
         img = np.dstack((img, img, img))
     elif img.shape[2] == 4:
